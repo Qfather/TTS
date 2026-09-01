@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TTS 音频库</title>
+<link rel="stylesheet" href="/static/style.css">
+<script>
+  /* 提前应用主题与卡片大小，避免刷新时闪烁 */
+  try {
+    if (localStorage.getItem("tts-theme") === "dark") {
+      document.documentElement.setAttribute("data-theme", "dark");
+    }
+    let s = parseInt(localStorage.getItem("tts-card-size"));
+    if (!s) s = Math.max(180, Math.round((window.innerWidth - 48 - 4 * 14) / 5));  // 默认一行 5 个
+    document.documentElement.style.setProperty("--card-min", s);
+  } catch (e) {}
+</script>
+</head>
+<body>
+
+<header class="topbar">
+  <h1 class="title">🎧 TTS 音频库</h1>
+  <div class="actions">
+    <button id="btnTheme" class="theme-toggle" title="切换到暗色">🌙</button>
+    <button id="btnSettings" class="btn" title="管理枚举">⚙ 设置</button>
+    <button id="btnAdd" class="btn btn-primary">＋ 添加</button>
+    <button id="btnBatch" class="btn">📁 批量添加</button>
+  </div>
+</header>
+
+<section class="filters" id="filters">
+  <div class="filter-row" data-kind="source">
+    <label>来源</label>
+    <div class="chips"></div>
+    <button class="chip chip-add" title="新建来源">＋</button>
+  </div>
+  <div class="filter-row" data-kind="gender">
+    <label>性别</label>
+    <div class="chips"></div>
+    <button class="chip chip-add" title="新建性别">＋</button>
+  </div>
+  <div class="filter-row" data-kind="age">
+    <label>年龄</label>
+    <div class="chips"></div>
+    <button class="chip chip-add" title="新建年龄">＋</button>
+  </div>
+  <div class="filter-row" data-kind="occupation">
+    <label>职业</label>
+    <div class="chips"></div>
+    <button class="chip chip-add" title="新建职业">＋</button>
+  </div>
+  <div class="filter-row" data-kind="tag">
+    <label>其他标签</label>
+    <div class="chips"></div>
+    <div class="card-size-ctrl">
+      <span class="size-label">卡片大小</span>
+      <input type="range" id="cardSize" min="180" max="800" step="10" title="调整音频卡片大小">
+    </div>
+  </div>
+</section>
+
+<main id="cardGrid" class="card-grid"></main>
+
+<div id="emptyState" class="empty hidden">
+  <p>🎵 还没有音频条目</p>
+  <p class="empty-sub">点击右上角「添加」或「批量添加」开始吧</p>
+</div>
+
+<!-- ======= 添加 / 编辑 弹窗 ======= -->
+<div id="modal" class="modal hidden">
+  <div class="drop-hint hidden">📁 松开以添加音频 / 头像</div>
+  <div class="modal-box">
+    <div class="modal-head">
+      <h2 id="modalTitle">添加音频</h2>
+      <button class="modal-close" data-close="modal">✕</button>
+    </div>
+    <form id="itemForm">
+      <input type="hidden" id="fId">
+      <div class="form-row">
+        <label>名称 *</label>
+        <input type="text" id="fName" required placeholder="角色/条目名称">
+      </div>
+      <div class="form-row">
+        <label>来源</label>
+        <select id="fSource"></select>
+        <button type="button" class="mini-add" data-kind="sources">＋新建</button>
+      </div>
+      <div class="form-row">
+        <label>性别</label>
+        <select id="fGender"></select>
+        <button type="button" class="mini-add" data-kind="genders">＋新建</button>
+      </div>
+      <div class="form-row">
+        <label>年龄</label>
+        <select id="fAge"></select>
+        <button type="button" class="mini-add" data-kind="ages">＋新建</button>
+      </div>
+      <div class="form-row">
+        <label>职业</label>
+        <select id="fOccupation"></select>
+        <button type="button" class="mini-add" data-kind="occupations">＋新建</button>
+      </div>
+      <div class="form-row">
+        <label>其他标签</label>
+        <input type="text" id="fTags" placeholder="逗号分隔，如：御姐,日常">
+      </div>
+      <div class="form-row">
+        <label>头像（可选）</label>
+        <div class="file-pick">
+          <button type="button" id="fAvatarBtn" class="btn-mini">选择文件</button>
+          <input type="file" id="fAvatar" accept="image/*" hidden>
+          <span class="file-name hidden" id="fAvatarName">
+            <span class="fname-text" id="fAvatarNameText"></span>
+            <button type="button" class="file-x" id="fAvatarClear" title="删除">❌</button>
+          </span>
+        </div>
+        <div class="avatar-preview" id="avatarPreview"></div>
+      </div>
+      <div class="form-row">
+        <label>音频文件 *</label>
+        <input type="file" id="fAudio" accept="audio/*,.wav,.mp3,.ogg,.m4a,.flac,.aac,.wma,.opus,.webm,.mid,.midi">
+      </div>
+      <audio id="fAudioPreview" class="audio-preview hidden" controls preload="metadata"></audio>
+      <div class="form-actions">
+        <button type="button" class="btn" data-close="modal">取消</button>
+        <button type="submit" class="btn btn-primary" id="fSubmit">保存</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ======= 批量添加 弹窗 ======= -->
+<div id="batchModal" class="modal hidden">
+  <div class="modal-box modal-wide">
+    <div class="modal-head">
+      <h2>批量添加</h2>
+      <button class="modal-close" data-close="batchModal">✕</button>
+    </div>
+    <div class="batch-body">
+      <div class="form-row">
+        <label>选择文件夹</label>
+        <input type="file" id="bDir" webkitdirectory directory multiple>
+        <span class="hint">每个子文件夹是一个条目：含音频文件与（可选）文件名含 icon 的图片头像</span>
+      </div>
+      <div class="batch-classify">
+        <div class="form-row">
+          <label>来源</label>
+          <select id="bSource"></select>
+          <button type="button" class="mini-add" data-kind="sources">＋新建</button>
+        </div>
+        <div class="form-row">
+          <label>性别</label>
+          <select id="bGender"></select>
+          <button type="button" class="mini-add" data-kind="genders">＋新建</button>
+        </div>
+        <div class="form-row">
+          <label>年龄</label>
+          <select id="bAge"></select>
+          <button type="button" class="mini-add" data-kind="ages">＋新建</button>
+        </div>
+        <div class="form-row">
+          <label>职业</label>
+          <select id="bOccupation"></select>
+          <button type="button" class="mini-add" data-kind="occupations">＋新建</button>
+        </div>
+      </div>
+      <div id="batchList" class="batch-list"></div>
+    </div>
+    <div class="form-actions">
+      <span id="batchStatus" class="hint"></span>
+      <button type="button" class="btn" data-close="batchModal">取消</button>
+      <button type="button" class="btn btn-primary" id="bSubmit">批量导入</button>
+    </div>
+  </div>
+</div>
+
+<!-- ======= 设置：枚举管理 弹窗 ======= -->
+<div id="settingsModal" class="modal hidden">
+  <div class="modal-box modal-wide">
+    <div class="modal-head">
+      <h2>⚙ 设置 · 枚举管理</h2>
+      <button class="modal-close" data-close="settingsModal">✕</button>
+    </div>
+    <div class="settings-body">
+      <div class="settings-group" data-kind="sources">
+        <div class="settings-head">来源
+          <button type="button" class="mini-add" data-kind="sources">＋新建</button>
+        </div>
+        <div class="settings-items"></div>
+      </div>
+      <div class="settings-group" data-kind="genders">
+        <div class="settings-head">性别
+          <button type="button" class="mini-add" data-kind="genders">＋新建</button>
+        </div>
+        <div class="settings-items"></div>
+      </div>
+      <div class="settings-group" data-kind="ages">
+        <div class="settings-head">年龄
+          <button type="button" class="mini-add" data-kind="ages">＋新建</button>
+        </div>
+        <div class="settings-items"></div>
+      </div>
+      <div class="settings-group" data-kind="occupations">
+        <div class="settings-head">职业
+          <button type="button" class="mini-add" data-kind="occupations">＋新建</button>
+        </div>
+        <div class="settings-items"></div>
+      </div>
+      <div class="settings-group" data-kind="tags">
+        <div class="settings-head">其他标签</div>
+        <div class="settings-items"></div>
+      </div>
+    </div>
+    <div class="form-actions">
+      <span class="hint">重命名会同步更新所有使用该枚举的条目；被条目使用的枚举不可删除</span>
+      <button type="button" class="btn" data-close="settingsModal">关闭</button>
+    </div>
+  </div>
+</div>
+
+<!-- ======= 新建枚举 小弹窗 ======= -->
+<div id="enumModal" class="modal hidden">
+  <div class="modal-box modal-sm">
+    <div class="modal-head">
+      <h2 id="enumTitle">新建</h2>
+      <button class="modal-close" data-close="enumModal">✕</button>
+    </div>
+    <div class="enum-body">
+      <input type="text" id="enumValue" placeholder="输入新名称">
+    </div>
+    <div class="form-actions">
+      <button type="button" class="btn" data-close="enumModal">取消</button>
+      <button type="button" class="btn btn-primary" id="enumOk">确定</button>
+    </div>
+  </div>
+</div>
+
+<audio id="player" preload="metadata"></audio>
+
+<script src="/static/app.js"></script>
+</body>
+</html>
