@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # 🎧 TTS 音频库
 
 本地 TTS 音频库 WebUI：管理、分类、筛选、播放 TTS 音频片段。
@@ -48,3 +49,7 @@ library/
 ```bat
 python tests_smoke.py   :: 后端 API 冒烟测试（自动清理测试数据）
 ```
+=======
+# TTS
+TTS音色库
+>>>>>>> f0b7b38615abb303c26643e2130d477640687b33

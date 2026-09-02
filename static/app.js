@@ -8,7 +8,7 @@ const ENUM_KINDS = ["sources", "genders", "ages", "occupations"];
 const state = {
   items: [],
   enums: { sources: [], genders: [], ages: [], occupations: [], tags: [] },
-  filters: { source: null, gender: null, age: null, occupation: null, tags: new Set() },
+  filters: { source: null, gender: null, age: null, occupation: null, tags: new Set(), search: "" },
   currentId: null,
 };
 
@@ -87,8 +87,25 @@ function matchesFilter(item) {
   if (f.age && item.age !== f.age) return false;
   if (f.occupation && item.occupation !== f.occupation) return false;
   if (f.tags.size > 0 && !item.tags.some((t) => f.tags.has(t))) return false;
+  // 关键词搜索：仅匹配名称
+  if (f.search && !String(item.name || "").toLowerCase().includes(f.search)) return false;
   return true;
 }
+
+/* ---------- 名称搜索栏（实时过滤，仅匹配名称） ---------- */
+$("#searchInput").addEventListener("input", (e) => {
+  state.filters.search = e.target.value.trim().toLowerCase();
+  renderCards();
+});
+
+/* ---------- 筛选标签左右滑动（单行超出部分） ---------- */
+document.querySelectorAll(".chip-scroll").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    const chips = btn.closest(".filter-row").querySelector(".chips");
+    const dir = parseInt(btn.dataset.scroll, 10) || 0;
+    chips.scrollBy({ left: dir * 220, behavior: "smooth" });
+  });
+});
 
 /* ---------- 卡片渲染 ---------- */
 function fmtTime(sec) {
@@ -579,23 +596,12 @@ $("#btnBatch").addEventListener("click", () => {
 
 $("#bDir").addEventListener("change", (e) => {
   const files = Array.from(e.target.files);
-  const groups = new Map();
-  files.forEach((f) => {
-    const parts = f.webkitRelativePath.split("/");
-    const key = parts.length > 2 ? parts[1] : parts[0];
-    if (!groups.has(key)) groups.set(key, { name: key, audio: null, avatar: null });
-    const g = groups.get(key);
-    const ext = (f.name.split(".").pop() || "").toLowerCase();
-    if (IMG_EXT.includes(ext) && f.name.toLowerCase().includes("icon") && !g.avatar) g.avatar = f;
-    if (AUDIO_EXT.includes(ext) && !g.audio) g.audio = f;
-  });
-  batchGroups = Array.from(groups.values()).filter((g) => g.audio);
-  // 头像统一转为 webp（异步处理，完成后提交时自动用转换结果）
-  batchGroups.forEach((g) => {
-    if (g.avatar) {
-      processAvatar(g.avatar, (processed) => { if (processed) g.avatar = processed; });
-    }
-  });
+  batchGroups = files
+    .filter((f) => AUDIO_EXT.includes((f.name.split(".").pop() || "").toLowerCase()))
+    .map((f) => ({
+      name: f.name.replace(/\.[^.]+$/, ""),  // 默认名称 = 文件名去扩展名
+      audio: f,
+    }));
   renderBatchList();
 });
 
@@ -605,21 +611,28 @@ function renderBatchList() {
   batchGroups.forEach((g, i) => {
     const row = document.createElement("div");
     row.className = "batch-item";
-    const avatarHtml = g.avatar
-      ? `<img src="${URL.createObjectURL(g.avatar)}">`
-      : `<div class="b-avatar-default">🎭</div>`;
     row.innerHTML = `
-      ${avatarHtml}
-      <input type="text" value="${esc(g.name)}" data-b-name="${i}" title="条目名称">
-      <input type="text" placeholder="其他标签（逗号分隔）" data-b-tags="${i}" title="其他标签">
-      <span class="b-audio-name" title="${esc(g.audio.name)}">${esc(g.audio.name)}</span>`;
+      <div class="b-line1">
+        <input type="text" value="${esc(g.name)}" data-b-name="${i}" title="条目名称">
+        <span class="b-audio-name" title="${esc(g.audio.name)}">${esc(g.audio.name)}</span>
+      </div>
+      <div class="b-line2">
+        <select data-b-gender="${i}" title="性别"></select>
+        <select data-b-age="${i}" title="年龄"></select>
+        <select data-b-occupation="${i}" title="职业"></select>
+        <input type="text" placeholder="其他标签（逗号分隔）" data-b-tags="${i}" title="其他标签">
+      </div>`;
+    // 行内下拉预选顶部统一值，可逐行修改
+    fillSelect(row.querySelector(`[data-b-gender="${i}"]`), state.enums.genders, $("#bGender").value);
+    fillSelect(row.querySelector(`[data-b-age="${i}"]`), state.enums.ages, $("#bAge").value);
+    fillSelect(row.querySelector(`[data-b-occupation="${i}"]`), state.enums.occupations, $("#bOccupation").value);
     box.appendChild(row);
   });
-  $("#batchStatus").textContent = batchGroups.length ? `已识别 ${batchGroups.length} 个条目` : "未识别到音频条目";
+  $("#batchStatus").textContent = batchGroups.length ? `已选择 ${batchGroups.length} 个音频` : "未选择音频文件";
 }
 
 $("#bSubmit").addEventListener("click", async () => {
-  if (!batchGroups.length) { alert("请先选择包含音频条目的文件夹"); return; }
+  if (!batchGroups.length) { alert("请先选择音频文件"); return; }
   const fd = new FormData();
   fd.set("source", $("#bSource").value);
   fd.set("gender", $("#bGender").value);
@@ -628,8 +641,14 @@ $("#bSubmit").addEventListener("click", async () => {
   batchGroups.forEach((g, i) => {
     const nameInput = document.querySelector(`[data-b-name="${i}"]`);
     const tagsInput = document.querySelector(`[data-b-tags="${i}"]`);
+    const genderSel = document.querySelector(`[data-b-gender="${i}"]`);
+    const ageSel = document.querySelector(`[data-b-age="${i}"]`);
+    const occSel = document.querySelector(`[data-b-occupation="${i}"]`);
     fd.set(`name_${i}`, (nameInput ? nameInput.value : g.name).trim());
     fd.set(`tags_${i}`, tagsInput ? tagsInput.value : "");
+    fd.set(`gender_${i}`, genderSel ? genderSel.value : "");
+    fd.set(`age_${i}`, ageSel ? ageSel.value : "");
+    fd.set(`occupation_${i}`, occSel ? occSel.value : "");
     fd.set(`audio_${i}`, g.audio, g.audio.name);
     if (g.avatar) fd.set(`avatar_${i}`, g.avatar, g.avatar.name);
   });

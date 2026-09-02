@@ -446,14 +446,12 @@ def item_audio_by_index(n):
 
 @app.route("/api/batch/import", methods=["POST"])
 def batch_import():
-    """批量导入：目标分类统一指定，条目按 audio_<i>/avatar_<i>/name_<i>/tags_<i> 分组。"""
+    """批量导入：条目按 audio_<i>/avatar_<i>/name_<i>/tags_<i> 分组。
+    每行可用 source_<i>/gender_<i>/age_<i>/occupation_<i> 覆盖统一分类（缺省用顶部统一值）。"""
     source = (request.form.get("source") or "").strip()
     gender = (request.form.get("gender") or "").strip()
     age = (request.form.get("age") or "").strip()
     occupation = (request.form.get("occupation") or "").strip()
-
-    parent = classify_path(source, gender, age, occupation)
-    parent.mkdir(parents=True, exist_ok=True)
 
     idxs = set()
     for key in request.files:
@@ -470,13 +468,21 @@ def batch_import():
         name = (request.form.get(f"name_{i}") or "").strip() or Path(audio.filename).stem
         tags = [t.strip() for t in (request.form.get(f"tags_{i}") or "").split(",") if t.strip()]
 
-        entry_dir = parent / unique_entry_name(parent, name)
+        # 每行独立分类（缺省回退到顶部统一值）
+        i_source = (request.form.get(f"source_{i}") or "").strip() or source
+        i_gender = (request.form.get(f"gender_{i}") or "").strip() or gender
+        i_age = (request.form.get(f"age_{i}") or "").strip() or age
+        i_occupation = (request.form.get(f"occupation_{i}") or "").strip() or occupation
+
+        parent_i = classify_path(i_source, i_gender, i_age, i_occupation)
+        parent_i.mkdir(parents=True, exist_ok=True)
+        entry_dir = parent_i / unique_entry_name(parent_i, name)
         entry_dir.mkdir()
         meta = {
             "id": uuid.uuid4().hex[:12],
             "index": next_index(),
             "name": name,
-            "source": source, "gender": gender, "age": age, "occupation": occupation,
+            "source": i_source, "gender": i_gender, "age": i_age, "occupation": i_occupation,
             "tags": tags,
         }
         _save_audio(entry_dir, audio)

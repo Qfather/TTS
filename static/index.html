@@ -32,27 +32,37 @@
 <section class="filters" id="filters">
   <div class="filter-row" data-kind="source">
     <label>来源</label>
+    <button type="button" class="chip-scroll" data-scroll="-1" title="左移">‹</button>
     <div class="chips"></div>
+    <button type="button" class="chip-scroll" data-scroll="1" title="右移">›</button>
     <button class="chip chip-add" title="新建来源">＋</button>
   </div>
   <div class="filter-row" data-kind="gender">
     <label>性别</label>
+    <button type="button" class="chip-scroll" data-scroll="-1" title="左移">‹</button>
     <div class="chips"></div>
+    <button type="button" class="chip-scroll" data-scroll="1" title="右移">›</button>
     <button class="chip chip-add" title="新建性别">＋</button>
   </div>
   <div class="filter-row" data-kind="age">
     <label>年龄</label>
+    <button type="button" class="chip-scroll" data-scroll="-1" title="左移">‹</button>
     <div class="chips"></div>
+    <button type="button" class="chip-scroll" data-scroll="1" title="右移">›</button>
     <button class="chip chip-add" title="新建年龄">＋</button>
   </div>
   <div class="filter-row" data-kind="occupation">
     <label>职业</label>
+    <button type="button" class="chip-scroll" data-scroll="-1" title="左移">‹</button>
     <div class="chips"></div>
+    <button type="button" class="chip-scroll" data-scroll="1" title="右移">›</button>
     <button class="chip chip-add" title="新建职业">＋</button>
   </div>
   <div class="filter-row" data-kind="tag">
     <label>其他标签</label>
+    <button type="button" class="chip-scroll" data-scroll="-1" title="左移">‹</button>
     <div class="chips"></div>
+    <button type="button" class="chip-scroll" data-scroll="1" title="右移">›</button>
     <div class="card-size-ctrl">
       <span class="size-label">卡片大小</span>
       <input type="range" id="cardSize" min="180" max="800" step="10" title="调整音频卡片大小">
@@ -60,11 +70,16 @@
   </div>
 </section>
 
-<main id="cardGrid" class="card-grid"></main>
+<div id="scrollArea" class="scroll-area">
+  <main id="cardGrid" class="card-grid"></main>
+  <div id="emptyState" class="empty hidden">
+    <p>🎵 还没有音频条目</p>
+    <p class="empty-sub">点击右上角「添加」或「批量添加」开始吧</p>
+  </div>
+</div>
 
-<div id="emptyState" class="empty hidden">
-  <p>🎵 还没有音频条目</p>
-  <p class="empty-sub">点击右上角「添加」或「批量添加」开始吧</p>
+<div id="searchBar" class="search-bar" title="搜索名称">
+  <input type="text" id="searchInput" placeholder="🔍 搜索名称…" autocomplete="off">
 </div>
 
 <!-- ======= 添加 / 编辑 弹窗 ======= -->
@@ -139,9 +154,9 @@
     </div>
     <div class="batch-body">
       <div class="form-row">
-        <label>选择文件夹</label>
-        <input type="file" id="bDir" webkitdirectory directory multiple>
-        <span class="hint">每个子文件夹是一个条目：含音频文件与（可选）文件名含 icon 的图片头像</span>
+        <label>选择音频</label>
+        <input type="file" id="bDir" accept="audio/*,.mp3,.wav,.ogg,.m4a,.flac,.aac,.wma,.opus,.webm,.mid,.midi" multiple>
+        <span class="hint">可多选音频文件，每个文件作为一个条目（名称默认取文件名）</span>
       </div>
       <div class="batch-classify">
         <div class="form-row">

@@ -56,8 +56,10 @@ body {
   font-family: "Microsoft YaHei", "PingFang SC", "Segoe UI", sans-serif;
   background: var(--bg);
   color: var(--text);
-  padding-bottom: 48px;
+  display: flex; flex-direction: column; overflow: hidden;
 }
+/* ===== 滚动区：仅卡片列表内部滚动，顶部（标题栏+筛选区）始终冻结 ===== */
+.scroll-area { flex: 1; overflow-y: auto; min-height: 0; }
 
 /* ===== 顶栏 ===== */
 .topbar {
@@ -65,7 +67,7 @@ body {
   padding: 14px 24px;
   background: var(--card);
   border-bottom: 1px solid var(--border);
-  position: sticky; top: 0; z-index: 50;
+  flex-shrink: 0;
 }
 .title { font-size: 20px; font-weight: 700; }
 .actions { display: flex; gap: 10px; }
@@ -87,16 +89,17 @@ body {
 .btn-primary:hover { background: var(--primary-dark); color: #fff; }
 .btn:disabled { opacity: .5; cursor: not-allowed; }
 
-/* ===== 筛选区 ===== */
+/* ===== 筛选区（固定冻结，不参与页面滚动） ===== */
 .filters {
   background: var(--card);
   border-bottom: 1px solid var(--border);
-  padding: 8px 24px;
-  position: sticky; top: 57px; z-index: 40;
+  padding: 6px 24px;
+  flex-shrink: 0;
+  box-shadow: 0 2px 6px var(--shadow);
 }
 .filter-row {
-  display: flex; align-items: center; gap: 8px;
-  padding: 4px 0; flex-wrap: wrap;
+  display: flex; align-items: center; gap: 6px;
+  padding: 3px 0; min-width: 0;
 }
 .filter-row > label {
   width: 64px; font-size: 13px; color: var(--muted); flex-shrink: 0;
@@ -108,12 +111,25 @@ body {
 .card-size-ctrl input[type="range"] {
   width: 140px; accent-color: var(--primary); cursor: pointer;
 }
-.chips { display: flex; gap: 6px; flex-wrap: wrap; }
+/* 筛选标签单行显示，超出一行的用左右按钮滑动查看 */
+.chips {
+  display: flex; gap: 6px; flex-wrap: nowrap; overflow-x: auto;
+  flex: 1; min-width: 0;
+  scrollbar-width: none; -ms-overflow-style: none;
+}
+.chips::-webkit-scrollbar { display: none; }
+.chip-scroll {
+  border: 1px solid var(--border); background: var(--card); color: var(--muted);
+  width: 22px; height: 22px; border-radius: 50%; cursor: pointer; flex-shrink: 0;
+  font-size: 15px; line-height: 1; display: flex; align-items: center; justify-content: center;
+  transition: all .15s;
+}
+.chip-scroll:hover { border-color: var(--primary); color: var(--primary); background: var(--mini-hover); }
 .chip {
   border: 1px solid var(--border); background: var(--card);
   color: var(--text); font-size: 13px; padding: 3px 12px;
   border-radius: 999px; cursor: pointer; transition: all .15s;
-  user-select: none;
+  user-select: none; white-space: nowrap; flex-shrink: 0;
 }
 .chip:hover { border-color: var(--primary); }
 .chip.active { background: var(--primary); border-color: var(--primary); color: #fff; }
@@ -279,16 +295,22 @@ body {
 }
 .batch-list { margin: 12px 0; display: flex; flex-direction: column; gap: 8px; }
 .batch-item {
-  display: flex; align-items: center; gap: 10px;
+  display: flex; flex-direction: column; gap: 6px;
   border: 1px solid var(--border); border-radius: 10px; padding: 8px 12px;
 }
-.batch-item img { width: 40px; height: 40px; border-radius: 8px; object-fit: cover; flex-shrink: 0; }
-.batch-item .b-avatar-default {
-  width: 40px; height: 40px; border-radius: 8px; background: var(--avatar-bg);
-  display: flex; align-items: center; justify-content: center; color: var(--muted); flex-shrink: 0;
+.b-line1 { display: flex; align-items: center; gap: 10px; }
+.b-line1 input { flex: 1; min-width: 60px; padding: 6px 8px; border: 1px solid var(--border); border-radius: 6px; font-size: 13px; background: var(--bg); color: var(--text); }
+.b-line2 { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.b-line2 select {
+  padding: 5px 8px; border: 1px solid var(--border); border-radius: 6px;
+  font-size: 12px; background: var(--bg); color: var(--text); cursor: pointer; max-width: 110px;
 }
-.batch-item input { flex: 1; min-width: 60px; padding: 6px 8px; border: 1px solid var(--border); border-radius: 6px; font-size: 13px; }
-.batch-item .b-audio-name { font-size: 12px; color: var(--muted); max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex-shrink: 0; }
+.b-line2 select:focus { border-color: var(--primary); outline: none; }
+.b-line2 input {
+  flex: 1; min-width: 120px; padding: 5px 8px; border: 1px solid var(--border);
+  border-radius: 6px; font-size: 12px; background: var(--bg); color: var(--text);
+}
+.b-audio-name { font-size: 12px; color: var(--muted); max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex-shrink: 0; }
 .enum-body { padding: 16px 20px; }
 .settings-body {
   padding: 16px 20px 0;
@@ -311,3 +333,20 @@ body {
   font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .settings-ops { display: flex; gap: 2px; flex-shrink: 0; }
+
+/* ===== 底部中央透明搜索栏（鼠标移入才完整显示） ===== */
+.search-bar {
+  position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%);
+  z-index: 70; width: min(480px, 92vw);
+}
+.search-bar input {
+  width: 100%; padding: 9px 22px; border-radius: 999px;
+  border: 1px solid var(--border); background: var(--card); color: var(--text);
+  font-size: 14px; outline: none;
+  opacity: .12; transition: opacity .25s ease, border-color .15s, box-shadow .2s;
+  box-shadow: 0 2px 10px var(--shadow);
+}
+.search-bar:hover input,
+.search-bar input:focus { opacity: 1; box-shadow: 0 6px 20px var(--shadow-hover); }
+.search-bar input:focus { border-color: var(--primary); }
+.search-bar input::placeholder { color: var(--muted); }
