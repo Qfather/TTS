@@ -24,16 +24,37 @@ async function api(url, options) {
   return data;
 }
 
-/* ---------- 数据加载 ---------- */
+/* ---------- 数据加载（完整模式用后端 API；静态/Git Pages 模式读 data.json 只读） ---------- */
+let IS_STATIC = false;   // true = 静态只读（Git Pages 等纯静态托管）
+
 async function loadAll() {
-  const [itemsRes, enumsRes] = await Promise.all([
-    api("/api/items"),
-    api("/api/enums"),
-  ]);
-  state.items = itemsRes.items;
-  state.enums = enumsRes;
+  let items, enums;
+  try {
+    const itemsRes = await api("/api/items");
+    const enumsRes = await api("/api/enums");
+    items = itemsRes.items;
+    enums = enumsRes;
+    IS_STATIC = false;
+  } catch (e) {
+    // 无后端：尝试 Git Pages 静态数据
+    IS_STATIC = true;
+    const res = await fetch("./data.json");
+    if (!res.ok) throw new Error("无法连接本地服务，也未找到 data.json（静态模式需要它）");
+    const data = await res.json();
+    items = data.items || [];
+    enums = data.enums || { sources: [], genders: [], ages: [], occupations: [], tags: [] };
+  }
+  state.items = items;
+  state.enums = enums;
+  applyStaticUI();
   renderFilters();
   renderCards();
+}
+
+/* 静态只读模式：隐藏 添加/批量添加/设置 与卡片上的 编辑/删除/打开文件夹 */
+function applyStaticUI() {
+  const hide = (id) => { const b = $("#" + id); if (b) b.classList.toggle("hidden", IS_STATIC); };
+  ["btnAdd", "btnBatch", "btnSettings"].forEach(hide);
 }
 
 /* ---------- 筛选区 ---------- */
@@ -130,21 +151,32 @@ function esc(s) {
   }[c]));
 }
 
+/* 默认头像（内嵌 SVG，与后端一致）：静态模式下无头像文件时使用 */
+const DEFAULT_AVATAR_URI = "data:image/svg+xml," + encodeURIComponent(
+  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">' +
+  '<circle cx="50" cy="50" r="50" fill="#7c9cff"/>' +
+  '<circle cx="50" cy="38" r="16" fill="#ffffff"/>' +
+  '<path d="M20 82 Q20 56 50 56 Q80 56 80 82 Z" fill="#ffffff"/></svg>'
+);
+
 function cardHtml(item) {
   const playing = state.currentId === item.id;
-  const avatar = `<img src="${item.avatar_url}" alt="头像">`;
+  const avatarSrc = item.avatar_url || DEFAULT_AVATAR_URI;
+  const avatar = `<img src="${avatarSrc}" alt="头像">`;
   const playIcon = playing && !audio.paused ? "⏸" : "▶";
+  const tools = IS_STATIC ? "" : `
+        <div class="card-tools">
+          <button class="icon-btn" data-act="folder" title="打开所在文件夹">📂</button>
+          <button class="icon-btn" data-act="edit" title="编辑">✎</button>
+          <button class="icon-btn danger" data-act="del" title="删除">🗑</button>
+        </div>`;
   return `
   <div class="card" data-id="${item.id}">
     <div class="card-avatar">${avatar}</div>
     <div class="card-body">
       <div class="card-top">
         <div class="card-name" title="${esc(item.name)}">${esc(item.name)}<span class="card-index">#${item.index}</span></div>
-        <div class="card-tools">
-          <button class="icon-btn" data-act="folder" title="打开所在文件夹">📂</button>
-          <button class="icon-btn" data-act="edit" title="编辑">✎</button>
-          <button class="icon-btn danger" data-act="del" title="删除">🗑</button>
-        </div>
+        ${tools}
       </div>
       <div class="card-player">
         <button class="btn-play ${playing ? "playing" : ""}" data-act="play">${playIcon}</button>

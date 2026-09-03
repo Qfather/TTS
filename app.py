@@ -61,12 +61,22 @@ app = Flask(__name__)
 
 @app.route("/")
 def index():
-    return send_from_directory(STATIC_DIR, "index.html")
+    return send_from_directory(BASE_DIR, "index.html")
 
 
-@app.route("/static/<path:filename>")
-def static_files(filename):
-    return send_from_directory(STATIC_DIR, filename)
+@app.route("/style.css")
+def root_style():
+    return send_from_directory(BASE_DIR, "style.css")
+
+
+@app.route("/app.js")
+def root_script():
+    return send_from_directory(BASE_DIR, "app.js")
+
+
+@app.route("/data.json")
+def root_data():
+    return send_from_directory(BASE_DIR, "data.json")
 
 
 # ---------------------------------------------------------------------------
