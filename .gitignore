@@ -1,0 +1,4 @@
+# 会话/缓存（不应提交）
+.reasonix/
+__pycache__/
+*.pyc

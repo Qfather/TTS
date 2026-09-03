@@ -164,11 +164,13 @@ function cardHtml(item) {
   const avatarSrc = item.avatar_url || DEFAULT_AVATAR_URI;
   const avatar = `<img src="${avatarSrc}" alt="头像">`;
   const playIcon = playing && !audio.paused ? "⏸" : "▶";
-  const tools = IS_STATIC ? "" : `
+  const tools = `
         <div class="card-tools">
+          <button class="icon-btn" data-act="download" title="下载音频">⬇</button>
+          ${IS_STATIC ? "" : `
           <button class="icon-btn" data-act="folder" title="打开所在文件夹">📂</button>
           <button class="icon-btn" data-act="edit" title="编辑">✎</button>
-          <button class="icon-btn danger" data-act="del" title="删除">🗑</button>
+          <button class="icon-btn danger" data-act="del" title="删除">🗑</button>`}
         </div>`;
   return `
   <div class="card" data-id="${item.id}">
@@ -473,7 +475,15 @@ $("#cardGrid").addEventListener("click", async (e) => {
   const card = btn.closest(".card");
   const id = card.dataset.id;
   const item = state.items.find((i) => i.id === id);
-  if (btn.dataset.act === "edit") {
+  if (btn.dataset.act === "download") {
+    const ext = (item.audio_url.split("?")[0].match(/\.[a-z0-9]+$/i) || [".wav"])[0];
+    const a = document.createElement("a");
+    a.href = item.audio_url;
+    a.download = item.name + ext;   // 以条目名保存，保留原扩展名
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  } else if (btn.dataset.act === "edit") {
     openItemModal(item);
   } else if (btn.dataset.act === "folder") {
     try {
