@@ -5,9 +5,9 @@ const AUDIO_EXT = ["mp3", "wav", "ogg", "m4a", "aac", "flac", "wma", "opus", "we
 const IMG_EXT = ["png", "jpg", "jpeg", "jfif", "jpe", "gif", "webp", "bmp", "svg", "ico"];
 const ENUM_KINDS = ["sources", "genders", "ages", "occupations"];
 
-/* Git Pages 简易登录：仅用于挡住普通访客。当前默认密码：TTS音频库2026! */
-const ACCESS_PASSWORD_HASH = "2521cce00500beaa2cd7514493a8f7646263e0dc866d732c7f2ae2611b184907";
-const AUTH_KEY = "tts-library-auth";
+/* Git Pages 简易登录：仅用于挡住普通访客。当前默认密码：110110 */
+const ACCESS_PASSWORD_HASH = "1b527626476d0b34565bc1ed5db94a5afbd946fa618ea3441dd5bae7dc84a97a";
+const AUTH_KEY = "tts-library-auth-v2";
 
 const state = {
   items: [],
