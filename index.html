@@ -19,6 +19,17 @@
 </head>
 <body>
 
+<div id="loginGate" class="login-gate">
+  <form id="loginForm" class="login-box">
+    <div class="login-icon">🔒</div>
+    <h2>私人音频库</h2>
+    <p>请输入访问密码</p>
+    <input type="password" id="loginPassword" autocomplete="current-password" required placeholder="访问密码">
+    <div id="loginError" class="login-error"></div>
+    <button type="submit" class="btn btn-primary">进入音频库</button>
+  </form>
+</div>
+
 <header class="topbar">
   <h1 class="title">🎧 TTS 音频库</h1>
   <div class="actions">
@@ -26,6 +37,7 @@
     <button id="btnSettings" class="btn" title="管理枚举">⚙ 设置</button>
     <button id="btnAdd" class="btn btn-primary">＋ 添加</button>
     <button id="btnBatch" class="btn">📁 批量添加</button>
+    <button id="btnLogout" class="btn">退出</button>
   </div>
 </header>
 

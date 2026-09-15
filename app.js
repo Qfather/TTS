@@ -5,6 +5,10 @@ const AUDIO_EXT = ["mp3", "wav", "ogg", "m4a", "aac", "flac", "wma", "opus", "we
 const IMG_EXT = ["png", "jpg", "jpeg", "jfif", "jpe", "gif", "webp", "bmp", "svg", "ico"];
 const ENUM_KINDS = ["sources", "genders", "ages", "occupations"];
 
+/* Git Pages 简易登录：仅用于挡住普通访客。当前默认密码：TTS音频库2026! */
+const ACCESS_PASSWORD_HASH = "2521cce00500beaa2cd7514493a8f7646263e0dc866d732c7f2ae2611b184907";
+const AUTH_KEY = "tts-library-auth";
+
 const state = {
   items: [],
   enums: { sources: [], genders: [], ages: [], occupations: [], tags: [] },
@@ -733,6 +737,30 @@ $("#btnTheme").addEventListener("click", () => {
   const cur = document.documentElement.getAttribute("data-theme") === "dark" ? "dark" : "light";
   applyTheme(cur === "dark" ? "light" : "dark");
 });
+
+/* Git Pages 登录 */
+async function sha256(text) {
+  const bytes = new TextEncoder().encode(text);
+  const hash = await crypto.subtle.digest("SHA-256", bytes);
+  return Array.from(new Uint8Array(hash), (b) => b.toString(16).padStart(2, "0")).join("");
+}
+function setAuthenticated(value) {
+  try { if (value) sessionStorage.setItem(AUTH_KEY, "1"); else sessionStorage.removeItem(AUTH_KEY); } catch (e) {}
+  $("#loginGate").classList.toggle("hidden", value);
+  $("#btnLogout").classList.toggle("hidden", !value);
+}
+$("#loginForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const input = $("#loginPassword");
+  const error = $("#loginError");
+  if ((await sha256(input.value)) !== ACCESS_PASSWORD_HASH) { error.textContent = "密码不正确"; input.select(); return; }
+  error.textContent = ""; setAuthenticated(true);
+  await loadAll().catch((err) => alert("加载失败：" + err.message));
+});
+$("#btnLogout").addEventListener("click", () => { setAuthenticated(false); location.reload(); });
+let loggedIn = false;
+try { loggedIn = sessionStorage.getItem(AUTH_KEY) === "1"; } catch (e) {}
+setAuthenticated(loggedIn);
 
 /* 启动时同步按钮状态（head 内联脚本已提前设置 data-theme 防闪烁） */
 applyTheme(document.documentElement.getAttribute("data-theme") === "dark" ? "dark" : "light");
