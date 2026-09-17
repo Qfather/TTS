@@ -280,6 +280,15 @@ def _sync_enums_from_meta(meta: dict) -> None:
             add_enum(kind, value)
 
 
+def refresh_static_data() -> None:
+    """数据变更后同步生成 Git Pages 使用的静态 data.json。"""
+    subprocess.run(
+        [sys.executable, str(BASE_DIR / "export_static.py")],
+        cwd=str(BASE_DIR),
+        check=True,
+    )
+
+
 @app.route("/api/items")
 def list_items():
     return jsonify({"items": load_items()})
@@ -307,6 +316,7 @@ def create_item():
         _save_avatar(entry_dir, avatar)
     _write_json(entry_dir / "meta.json", meta)
     _sync_enums_from_meta(meta)
+    refresh_static_data()
     return jsonify({"ok": True, "item": item_dict(entry_dir, meta)}), 201
 
 
@@ -349,6 +359,7 @@ def update_item(item_id):
     new_meta["id"] = item_id
     _write_json(entry_dir / "meta.json", new_meta)
     _sync_enums_from_meta(new_meta)
+    refresh_static_data()
     return jsonify({"ok": True, "item": item_dict(entry_dir, new_meta)})
 
 
@@ -362,6 +373,7 @@ def replace_audio(item_id):
     if not audio or not audio.filename:
         return jsonify({"error": "音频文件不能为空"}), 400
     _save_audio(entry_dir, audio)
+    refresh_static_data()
     return jsonify({"ok": True})
 
 
@@ -371,6 +383,7 @@ def delete_item(item_id):
     if not entry_dir:
         return jsonify({"error": "条目不存在"}), 404
     shutil.rmtree(entry_dir)
+    refresh_static_data()
     return jsonify({"ok": True})
 
 
