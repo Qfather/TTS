@@ -516,6 +516,8 @@ def batch_import():
         _sync_enums_from_meta(meta)
         imported.append(item_dict(entry_dir, meta))
 
+    if imported:
+        refresh_static_data()
     return jsonify({"ok": True, "imported": imported, "errors": errors})
 
 
