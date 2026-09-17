@@ -42,7 +42,7 @@ async function loadAll() {
   } catch (e) {
     // 无后端：尝试 Git Pages 静态数据
     IS_STATIC = true;
-    const res = await fetch("./data.json");
+    const res = await fetch(`./data.json?v=${Date.now()}`);
     if (!res.ok) throw new Error("无法连接本地服务，也未找到 data.json（静态模式需要它）");
     const data = await res.json();
     items = data.items || [];
@@ -722,22 +722,6 @@ document.addEventListener("keydown", (e) => {
   }
 });
 
-/* ---------- 暗/亮主题 ---------- */
-function applyTheme(theme) {
-  document.documentElement.setAttribute("data-theme", theme);
-  try { localStorage.setItem("tts-theme", theme); } catch (e) { /* 忽略 */ }
-  const btn = $("#btnTheme");
-  if (btn) {
-    btn.textContent = theme === "dark" ? "☀️" : "🌙";
-    btn.title = theme === "dark" ? "切换到亮色" : "切换到暗色";
-  }
-}
-
-$("#btnTheme").addEventListener("click", () => {
-  const cur = document.documentElement.getAttribute("data-theme") === "dark" ? "dark" : "light";
-  applyTheme(cur === "dark" ? "light" : "dark");
-});
-
 /* Git Pages 登录 */
 async function sha256(text) {
   const bytes = new TextEncoder().encode(text);
@@ -761,9 +745,6 @@ $("#btnLogout").addEventListener("click", () => { setAuthenticated(false); locat
 let loggedIn = false;
 try { loggedIn = sessionStorage.getItem(AUTH_KEY) === "1"; } catch (e) {}
 setAuthenticated(loggedIn);
-
-/* 启动时同步按钮状态（head 内联脚本已提前设置 data-theme 防闪烁） */
-applyTheme(document.documentElement.getAttribute("data-theme") === "dark" ? "dark" : "light");
 
 /* ---------- 卡片大小滑块（整体缩放，localStorage 持久化，重启保持） ---------- */
 const CARD_SIZE_KEY = "tts-card-size";

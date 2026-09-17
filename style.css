@@ -71,14 +71,6 @@ body {
 }
 .title { font-size: 20px; font-weight: 700; }
 .actions { display: flex; gap: 10px; }
-.theme-toggle {
-  border: 1px solid var(--border); background: var(--card); color: var(--text);
-  width: 36px; height: 36px; border-radius: 8px; cursor: pointer; font-size: 16px;
-  display: flex; align-items: center; justify-content: center;
-  transition: all .15s; line-height: 1;
-}
-.theme-toggle:hover { border-color: var(--primary); }
-
 .btn {
   border: 1px solid var(--border); background: var(--card); color: var(--text);
   padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 14px;

@@ -6,11 +6,9 @@
 <title>TTS 音频库</title>
 <link rel="stylesheet" href="./style.css">
 <script>
-  /* 提前应用主题与卡片大小，避免刷新时闪烁 */
+  /* 固定暗色主题，并提前应用卡片大小，避免刷新时闪烁 */
   try {
-    if (localStorage.getItem("tts-theme") === "dark") {
-      document.documentElement.setAttribute("data-theme", "dark");
-    }
+    document.documentElement.setAttribute("data-theme", "dark");
     let s = parseInt(localStorage.getItem("tts-card-size"));
     if (!s) s = Math.max(180, Math.round((window.innerWidth - 48 - 4 * 14) / 5));  // 默认一行 5 个
     document.documentElement.style.setProperty("--card-min", s);
@@ -33,7 +31,6 @@
 <header class="topbar">
   <h1 class="title">🎧 TTS 音频库</h1>
   <div class="actions">
-    <button id="btnTheme" class="theme-toggle" title="切换到暗色">🌙</button>
     <button id="btnSettings" class="btn" title="管理枚举">⚙ 设置</button>
     <button id="btnAdd" class="btn btn-primary">＋ 添加</button>
     <button id="btnBatch" class="btn">📁 批量添加</button>
@@ -265,6 +262,6 @@
 
 <audio id="player" preload="metadata"></audio>
 
-<script src="./app.js"></script>
+<script src="./app.js?v=20260917-2"></script>
 </body>
 </html>
